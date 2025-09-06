@@ -1,0 +1,179 @@
+openapi: 3.0.3
+info:
+  title: Eco Kondo API
+  version: 1.0.0
+  description: API para gestão de reciclagem, moeda social e integração entre cidadãos, municípios e parceiros.
+
+servers:
+  - url: https://api.ecokondo.com/v1
+    description: Servidor de produção
+  - url: https://sandbox.ecokondo.com/v1
+    description: Servidor de testes
+
+tags:
+  - name: Cidadãos
+  - name: Municípios
+  - name: Empresas/Parceiros
+  - name: Pontos de Coleta
+  - name: Autenticação
+
+paths:
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Autenticar usuário e gerar token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Token JWT gerado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /cidadãos/{id}:
+    get:
+      tags: [Cidadãos]
+      summary: Obter informações de um cidadão
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dados do cidadão
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  nome:
+                    type: string
+                  moedas_sociais:
+                    type: number
+                  total_reciclado:
+                    type: number
+
+  /cidadãos/{id}/reciclagem:
+    post:
+      tags: [Cidadãos]
+      summary: Registrar entrega de material reciclável
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                material:
+                  type: string
+                  example: plástico
+                peso:
+                  type: number
+                  example: 2.5
+      responses:
+        "201":
+          description: Reciclagem registrada com sucesso
+
+  /municipios/{id}/dashboard:
+    get:
+      tags: [Municípios]
+      summary: Estatísticas de reciclagem no município
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Estatísticas consolidadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_reciclado:
+                    type: number
+                  bairros_ativos:
+                    type: array
+                    items:
+                      type: string
+                  empresas_parceiras:
+                    type: integer
+
+  /parceiros/{id}/transacoes:
+    get:
+      tags: [Empresas/Parceiros]
+      summary: Listar transações em moeda social do parceiro
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de transações em moeda social
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id_transacao:
+                      type: string
+                    valor:
+                      type: number
+                    data:
+                      type: string
+                      format: date-time
+
+  /pontos-coleta:
+    get:
+      tags: [Pontos de Coleta]
+      summary: Listar pontos de coleta ativos
+      responses:
+        "200":
+          description: Lista de pontos de coleta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    nome:
+                      type: string
+                    endereco:
+                      type: string
+                    latitude:
+                      type: number
+                    longitude:
+                      type: number
