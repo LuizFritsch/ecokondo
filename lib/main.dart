@@ -1,9 +1,5 @@
-import 'package:ecokondo/auth_repository.dart';
-import 'package:ecokondo/user_home.dart';
+import 'package:ecokondo/ecokondo.dart';
 import 'package:flutter/material.dart';
-
-import 'constants.dart';
-import 'login.dart';
 
 void main() {
   runApp(const EcoKondoApp());
@@ -47,7 +43,9 @@ class _RootScreenState extends State<RootScreen> {
   void _checkLogin() async {
     final loggedIn = await _authRepository.isLoggedIn();
     setState(() {
-      _screen = loggedIn ? const HomeScreen() : const LoginScreen();
+      _screen = loggedIn
+          ? const MainMenuScreen(userType: UserType.prefeitura)
+          : const LoginScreen();
       _loading = false;
     });
   }

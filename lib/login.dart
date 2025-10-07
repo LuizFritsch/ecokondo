@@ -1,10 +1,5 @@
-import 'package:ecokondo/auth_repository.dart';
-import 'package:ecokondo/constants.dart';
-import 'package:ecokondo/user_home.dart';
-import 'package:ecokondo/validators.dart';
+import 'package:ecokondo/ecokondo.dart';
 import 'package:flutter/material.dart';
-
-import 'registration.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,9 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simula login
-    await Future.delayed(const Duration(seconds: 2));
-
     try {
       final success = await _authRepository.login(
         email: _emailController.text.trim(),
@@ -39,10 +31,24 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login realizado com sucesso!')),
         );
+        // Navigator.pushReplacement(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) =>
+        //         const MainMenuScreen(userType: UserType.prefeitura),
+        //   ),
+        // );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(
+            builder: (context) =>
+                const MainMenuScreen(userType: UserType.usuario),
+          ),
         );
+        // Navigator.pushReplacement(
+        //   context,
+        //   MaterialPageRoute(builder: (context) => const HomeScreen()),
+        // );
       } else {
         ScaffoldMessenger.of(
           context,
@@ -59,9 +65,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       setState(() => _isLoading = false);
     }
-
-    // Fecha a tela de login e volta para a anterior
-    //Navigator.pop(context);
   }
 
   @override

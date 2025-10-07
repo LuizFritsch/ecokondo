@@ -1,5 +1,4 @@
-import 'package:ecokondo/constants.dart';
-import 'package:ecokondo/validators.dart';
+import 'package:ecokondo/ecokondo.dart';
 import 'package:flutter/material.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -36,9 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Registro finalizado com sucesso...'),
-      ),
+      SnackBar(content: Text('Registro finalizado com sucesso...')),
     );
 
     Navigator.pop(context); // Volta para o login
@@ -46,7 +43,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.cadastrar),
@@ -60,12 +56,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             key: _formKey,
             child: Column(
               children: [
-                Icon(Icons.eco, color:  AppColors.primary, size: 80),
+                Icon(Icons.eco, color: AppColors.primary, size: 80),
                 const SizedBox(height: 8),
-                Text(
-                  AppStrings.appName,
-                  style: AppTextStyles.title,
-                ),
+                Text(AppStrings.appName, style: AppTextStyles.title),
                 const SizedBox(height: 32),
 
                 // E-mail
@@ -122,11 +115,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   items: _cities
                       .map(
-                        (city) => DropdownMenuItem(
-                      value: city,
-                      child: Text(city),
-                    ),
-                  )
+                        (city) =>
+                            DropdownMenuItem(value: city, child: Text(city)),
+                      )
                       .toList(),
                   onChanged: (value) => setState(() => _selectedCity = value),
                   validator: Validators.city,
@@ -140,7 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:  AppColors.accent,
+                      backgroundColor: AppColors.accent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -148,9 +139,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                      AppStrings.cadastrar,
-                      style: AppTextStyles.button,
-                    ),
+                            AppStrings.cadastrar,
+                            style: AppTextStyles.button,
+                          ),
                   ),
                 ),
               ],
