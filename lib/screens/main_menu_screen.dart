@@ -28,7 +28,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     // telas padrão
     final commonTabs = const [
       HomeTab(),
-      FinancialTab(),
+      FinanceTab(),
       StatisticsTab(),
       ProfileTab(),
     ];
