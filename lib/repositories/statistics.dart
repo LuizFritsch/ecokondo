@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ecokondo/ecokondo.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
 class StatisticsRepository {
@@ -11,20 +12,26 @@ class StatisticsRepository {
 
   /// Busca estatísticas do usuário logado
   Future<UserStatistics?> getUserStatistics() async {
-    final url = Uri.parse('${AppConstants.apiBaseUrl}/statistics');
+    final fullPath = '${AppConstants.apiBaseUrl}/statistics';
+    final url = Uri.parse(fullPath);
 
     try {
+      debugPrint('[REQUEST][STATISTICS] $fullPath');
       final response = await _client.get(url);
-
+      debugPrint('[RESPONSE][STATISTICS] ${jsonDecode(response.body)}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return UserStatistics.fromJson(data);
       } else {
-        print('[ERROR] Failed to load statistics: ${response.statusCode}');
+        debugPrint(
+          '[RESPONSE][STATISTICS][ERROR] Failed to load statistics: ${response.statusCode}',
+        );
         return null;
       }
     } catch (e) {
-      print('[ERROR] Exception fetching statistics: $e');
+      debugPrint(
+        '[REQUEST][STATISTICS][ERROR] Exception fetching statistics: $e',
+      );
       return null;
     }
   }

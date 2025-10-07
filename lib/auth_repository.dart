@@ -62,10 +62,6 @@ class AuthRepository {
       ),
     );
     debugPrint('[DECRYPTJWT]: ${jwt.payload}');
-
-    final user = AuthPayload.fromJson(jwt.payload);
-
-    debugPrint(user.username);
   }
 
   Future<AuthPayload?> getLoggedUser() async {
