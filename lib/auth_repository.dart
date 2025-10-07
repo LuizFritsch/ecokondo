@@ -103,6 +103,7 @@ class AuthRepository {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
+    await prefs.clear();
   }
 
   Future<bool> isLoggedIn() async {
