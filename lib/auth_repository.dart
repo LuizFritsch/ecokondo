@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:ecokondo/models/user_logged_in.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,28 +10,29 @@ import '../constants.dart';
 
 class AuthRepository {
   final http.Client _client;
+  final fullPath = "${AppConstants.apiBaseUrl}/auth";
 
   AuthRepository({http.Client? client}) : _client = client ?? http.Client();
 
   Future<bool> login({required String email, required String password}) async {
-    final path = '/login';
-    final url = Uri.parse('${AppConstants.apiBaseUrl}$path');
-
+    final url = "$fullPath/login";
+    final uri = Uri.parse(url);
     try {
-      debugPrint(AppConstants.request(path));
+      debugPrint(AppConstants.request(fullPath));
       final response = await _client.post(
-        url,
+        uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'email': email, 'password': password}),
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        if (data['token'] != null) {
+        if (data['access_token'] != null) {
           final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', data['token']);
+          await prefs.setString('auth_token', data['access_token']);
           debugPrint(AppConstants.saveSharedPreferencesLoginSuccess);
+          decryptJWT(data['access_token']);
           await prefs.setInt(
             'auth_login_time',
             DateTime.now().millisecondsSinceEpoch,
@@ -51,6 +54,20 @@ class AuthRepository {
     }
   }
 
+  decryptJWT(String jwtToken) {
+    final jwt = JWT.verify(
+      jwtToken,
+      SecretKey(
+        'DO NOT USE THIS VALUE. INSTEAD, CREATE A COMPLEX SECRET AND KEEP IT SAFE OUTSIDE OF THE SOURCE CODE.',
+      ),
+    );
+    debugPrint('Payload: ${jwt.payload}');
+
+    final user = AuthPayload.fromJson(jwt.payload);
+
+    debugPrint(user.username);
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
@@ -69,7 +86,7 @@ class AuthRepository {
     final now = DateTime.now().millisecondsSinceEpoch;
 
     // Sessão válida por 24 horas
-    const sessionDuration = Duration(minutes: 1);
+    const sessionDuration = Duration(minutes: 30);
     final timeLeft = loginTime + sessionDuration.inMilliseconds - now;
 
     if (timeLeft <= 0) {
