@@ -61,7 +61,7 @@ class AuthRepository {
         'DO NOT USE THIS VALUE. INSTEAD, CREATE A COMPLEX SECRET AND KEEP IT SAFE OUTSIDE OF THE SOURCE CODE.',
       ),
     );
-    debugPrint('Payload: ${jwt.payload}');
+    debugPrint('[DECRYPTJWT]: ${jwt.payload}');
 
     final user = AuthPayload.fromJson(jwt.payload);
 
@@ -74,7 +74,7 @@ class AuthRepository {
     // Verifica se há token salvo
     final token = prefs.getString('auth_token');
     if (token == null) {
-      debugPrint('Nenhum token salvo.');
+      debugPrint('[GETLOGGEDUSER] No token stored');
       return null;
     }
 
@@ -82,7 +82,7 @@ class AuthRepository {
       // Decodifica o JWT (sem verificar assinatura, já que é um token local)
       final parts = token.split('.');
       if (parts.length != 3) {
-        debugPrint('Token JWT inválido.');
+        debugPrint('[GETLOGGEDUSER] Invalid JWT token');
         return null;
       }
 
@@ -92,10 +92,12 @@ class AuthRepository {
 
       final user = AuthPayload.fromJson(payload);
 
-      debugPrint('Usuário recuperado: ${user.username} (${user.userType})');
+      debugPrint(
+        '[GETLOGGEDUSER] Success: ${user.username} (${user.userType})',
+      );
       return user;
     } catch (e) {
-      debugPrint('Erro ao decodificar token: $e');
+      debugPrint('[GETLOGGEDUSER] Failed: $e');
       return null;
     }
   }
@@ -104,13 +106,16 @@ class AuthRepository {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
     await prefs.clear();
+    debugPrint('[SHARED-PREFERENCES][LOGOUT] Cleared');
   }
 
   Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey('auth_token') ||
         !prefs.containsKey('auth_login_time')) {
-      debugPrint('Usuário não logado');
+      debugPrint(
+        '[SHARED-PREFERENCES][ISLOGGEDIN] auth_token ou auth_login_time invalidos',
+      );
       await logout();
       return false;
     }
@@ -123,7 +128,7 @@ class AuthRepository {
     final timeLeft = loginTime + sessionDuration.inMilliseconds - now;
 
     if (timeLeft <= 0) {
-      debugPrint('Sessão expirada');
+      debugPrint('[ISLOGGEDIN] Sessão expirada');
       await logout();
       return false;
     } else {
