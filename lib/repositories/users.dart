@@ -19,13 +19,28 @@ class UsersRepository {
 
   Future<int> setPreferredCity(int userId, int cityId) async {
     final uri = Uri.parse('${AppConstants.apiBaseUrl}/users/$userId/preferred-city');
-    final res = await _client.patch(uri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'cityId': cityId}));
+    final res = await _client.patch(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'cityId': cityId}),
+    );
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       return data['preferredCityId'] as int;
     }
     throw Exception('Failed to set preferred city (${res.statusCode})');
+  }
+
+  Future<UserProfile> updateProfile(int userId, Map<String, dynamic> body) async {
+    final uri = Uri.parse('${AppConstants.apiBaseUrl}/users/$userId');
+    final res = await _client.patch(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    if (res.statusCode == 200) {
+      return UserProfile.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+    }
+    throw Exception('Failed to update profile (${res.statusCode})');
   }
 }

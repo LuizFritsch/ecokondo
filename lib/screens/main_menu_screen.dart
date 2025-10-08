@@ -1,112 +1,163 @@
-import 'package:ecokondo/ecokondo.dart';
 import 'package:flutter/material.dart';
 
-class MainMenuScreen extends StatefulWidget {
-  final UserType userType;
+import '../models/finance.dart';
+import '../models/user_profile.dart';
+import '../repositories/finance.dart';
+import '../repositories/users.dart';
+import '../theme/app_theme.dart';
+import '../utils/auth_utils.dart';
+import 'finance_tab.dart';
+import 'home_tab.dart';
+import 'profile_tab.dart';
+import 'statistics_tab.dart';
 
-  const MainMenuScreen({super.key, required this.userType});
+class MainMenuScreen extends StatefulWidget {
+  const MainMenuScreen({super.key});
 
   @override
   State<MainMenuScreen> createState() => _MainMenuScreenState();
 }
 
 class _MainMenuScreenState extends State<MainMenuScreen> {
-  int _currentIndex = 0;
+  final UsersRepository usersRepo = UsersRepository();
+  final FinanceRepository financeRepo = FinanceRepository();
 
-  // Mapa com tabs específicas para cada tipo de usuário
-  late final Map<UserType, List<Widget>> _tabs;
-  late final Map<UserType, List<BottomNavigationBarItem>> _navItems;
-  late final Map<UserType, List<String>> _titles;
+  int _currentIndex = 0;
+  int? _userId;
+  UserProfile? _profile;
+  FinanceData? _finance;
+  bool _loadingHeader = true;
 
   @override
   void initState() {
     super.initState();
-    _initMenus();
+    _bootstrapHeader();
   }
 
-  void _initMenus() {
-    // telas padrão
-    final commonTabs = const [
-      HomeTab(),
-      FinanceTab(),
-      StatisticsTab(),
-      ProfileTab(),
-    ];
+  Future<void> _bootstrapHeader() async {
+    try {
+      final id = await getCurrentUserId();
+      if (id == null) {
+        setState(() => _loadingHeader = false);
+        return;
+      }
+      _userId = id;
+      final profile = await usersRepo.getProfile(id);
+      final finance = await financeRepo.getFinanceData(id);
+      setState(() {
+        _profile = profile;
+        _finance = finance;
+        _loadingHeader = false;
+      });
+    } catch (_) {
+      setState(() => _loadingHeader = false);
+    }
+  }
 
-    final commonNav = const [
-      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.attach_money),
-        label: 'Financeiro',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.bar_chart),
-        label: 'Estatísticas',
-      ),
-      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-    ];
+  Widget _buildAppBarContent() {
+    final name = _profile?.fullName ?? 'Usuário';
+    final balanceEK = _finance?.balance ?? 0.0;
+    final reais = _finance == null ? 0.0 : (balanceEK * _finance!.ekToReal);
 
-    // aqui você pode personalizar futuramente por tipo
-    _tabs = {
-      UserType.prefeitura: commonTabs,
-      UserType.usuario: commonTabs,
-      UserType.admin: commonTabs,
-    };
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          name,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.2)),
+          ),
+          child: _loadingHeader
+              ? const SizedBox(
+                  width: 80,
+                  height: 12,
+                  child: LinearProgressIndicator(color: AppColors.white),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.account_balance_wallet,
+                      size: 18,
+                      color: AppColors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${balanceEK.toStringAsFixed(2)} EK',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '•  ≈ R\$ ${reais.toStringAsFixed(2)}',
+                      style: const TextStyle(color: AppColors.white),
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
 
-    _navItems = {
-      UserType.prefeitura: commonNav,
-      UserType.usuario: commonNav,
-      UserType.admin: commonNav,
-    };
-
-    final commonTitles = ['Home', 'Financeiro', 'Estatísticas', 'Perfil'];
-
-    _titles = {
-      UserType.prefeitura: commonTitles,
-      UserType.usuario: commonTitles,
-      UserType.admin: commonTitles,
-    };
+  Widget _buildBody() {
+    switch (_currentIndex) {
+      case 0:
+        return const HomeTab();
+      case 1:
+        return const FinanceTab();
+      case 2:
+        return const StatisticsTab();
+      case 3:
+        return const ProfileTab();
+      default:
+        return const HomeTab();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tabs = _tabs[widget.userType]!;
-    final navItems = _navItems[widget.userType]!;
-    final titles = _titles[widget.userType]!;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[_currentIndex]),
-        backgroundColor: AppColors.primary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final auth = AuthRepository();
-              await auth.logout();
-
-              // Volta para a tela de login
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
+        toolbarHeight: 96,
+        titleSpacing: 16,
+        title: _buildAppBarContent(),
+      ),
+      body: _buildBody(),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (i) => setState(() => _currentIndex = i),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Início',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet),
+            label: 'Financeiro',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.auto_graph_outlined),
+            selectedIcon: Icon(Icons.auto_graph),
+            label: 'Estatísticas',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Perfil',
           ),
         ],
-      ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: tabs[_currentIndex],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        items: navItems,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
       ),
     );
   }
