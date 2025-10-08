@@ -1,4 +1,4 @@
-export 'financial_tab.dart';
+export 'finance_tab.dart';
 export 'home_tab.dart';
 export 'main_menu_screen.dart';
 export 'profile_tab.dart';

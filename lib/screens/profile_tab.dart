@@ -1,24 +1,69 @@
+import 'package:ecokondo/models/user_logged_in.dart';
 import 'package:flutter/material.dart';
 
 import '../auth_repository.dart';
-import '../login.dart';
 
-class ProfileTab extends StatelessWidget {
+class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
 
-  Future<void> _logout(BuildContext context) async {
-    final repo = AuthRepository();
-    await repo.logout();
-    if (context.mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
+  @override
+  State<ProfileTab> createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<ProfileTab> {
+  final repo = AuthRepository();
+  AuthPayload? user;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final fetchedUser = await repo.getLoggedUser();
+    setState(() {
+      user = fetchedUser;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: const Text('Logout'));
+    if (user == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 40,
+                child: Text(user!.username[0].toUpperCase()),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user!.username,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(user!.userType),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

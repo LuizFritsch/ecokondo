@@ -68,6 +68,38 @@ class AuthRepository {
     debugPrint(user.username);
   }
 
+  Future<AuthPayload?> getLoggedUser() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Verifica se há token salvo
+    final token = prefs.getString('auth_token');
+    if (token == null) {
+      debugPrint('Nenhum token salvo.');
+      return null;
+    }
+
+    try {
+      // Decodifica o JWT (sem verificar assinatura, já que é um token local)
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        debugPrint('Token JWT inválido.');
+        return null;
+      }
+
+      final payload = jsonDecode(
+        utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+      );
+
+      final user = AuthPayload.fromJson(payload);
+
+      debugPrint('Usuário recuperado: ${user.username} (${user.userType})');
+      return user;
+    } catch (e) {
+      debugPrint('Erro ao decodificar token: $e');
+      return null;
+    }
+  }
+
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
