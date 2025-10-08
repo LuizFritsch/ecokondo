@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ecokondo/ecokondo.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class FinanceRepository {
@@ -13,18 +14,19 @@ class FinanceRepository {
     final uri = Uri.parse(fullPath);
 
     try {
+      debugPrint('[REQUEST][FINANCE] $fullPath');
       final response = await _client.get(uri);
-
+      debugPrint('[RESPONSE][FINANCE] ${jsonDecode(response.body)}');
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return FinanceData.fromJson(data);
       } else {
         throw Exception(
-          'Erro ao buscar dados financeiros: ${response.statusCode}',
+          '[REQUEST][FINANCE] Erro ao buscar dados financeiros: ${response.statusCode}',
         );
       }
     } catch (e) {
-      throw Exception('Erro na requisição financeira: $e');
+      throw Exception('[RESPONSE][FINANCE] Erro na requisição financeira: $e');
     }
   }
 }
