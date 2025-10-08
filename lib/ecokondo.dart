@@ -1,6 +1,7 @@
 export './models/models.dart';
 export './repositories/repositories.dart';
 export './screens/screens.dart';
+export './utils/utils.dart';
 export './widgets/widgets.dart';
 export 'auth_repository.dart';
 export 'constants.dart';

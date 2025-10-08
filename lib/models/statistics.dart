@@ -1,21 +1,27 @@
+
 class UserStatistics {
   final List<RecycledMaterial> materialsRecycled;
   final List<Sale> salesHistory;
 
-  UserStatistics({required this.materialsRecycled, required this.salesHistory});
+  UserStatistics({
+    required this.materialsRecycled,
+    required this.salesHistory,
+  });
 
   factory UserStatistics.fromJson(Map<String, dynamic> json) {
-    // Ajuste os nomes de acordo com o JSON do backend
-    final recycledList = json['recycled'] as List<dynamic>? ?? [];
-    final salesList = json['sales_history'] as List<dynamic>? ?? [];
+    // Backend: { user: {...}, recycled: { total_kg, total_ek, by_material: [...] }, sales_history: [...] }
+    final recycledObj = (json['recycled'] as Map<String, dynamic>?) ?? {};
+    final byMaterial = (recycledObj['by_material'] as List<dynamic>? ?? [])
+        .map((e) => RecycledMaterial.fromJson(e as Map<String, dynamic>))
+        .toList();
+
+    final salesList = (json['sales_history'] as List<dynamic>? ?? [])
+        .map((e) => Sale.fromJson(e as Map<String, dynamic>))
+        .toList();
 
     return UserStatistics(
-      materialsRecycled: recycledList
-          .map((e) => RecycledMaterial.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      salesHistory: salesList
-          .map((sale) => Sale.fromJson(sale as Map<String, dynamic>))
-          .toList(),
+      materialsRecycled: byMaterial,
+      salesHistory: salesList,
     );
   }
 }
@@ -23,35 +29,19 @@ class UserStatistics {
 class RecycledMaterial {
   final String name;
   final double quantityKg;
+  final double? ek;
 
-  RecycledMaterial({required this.name, required this.quantityKg});
-
-  factory RecycledMaterial.fromJson(Map<String, dynamic> json) {
-    return RecycledMaterial(
-      name: json['name'] ?? '',
-      quantityKg: (json['quantity'] ?? 0).toDouble(),
-    );
-  }
-}
-
-class SaleItem {
-  final String name;
-  final double quantityKg;
-  final double ekReceived;
-
-  SaleItem({
+  RecycledMaterial({
     required this.name,
     required this.quantityKg,
-    required this.ekReceived,
+    this.ek,
   });
 
-  factory SaleItem.fromJson(Map<String, dynamic> json) {
-    return SaleItem(
-      name: json['name'] ?? '',
-      quantityKg: (json['quantity'] ?? 0).toDouble(),
-      ekReceived: (json['ek_received'] ?? 0).toDouble(),
-    );
-  }
+  factory RecycledMaterial.fromJson(Map<String, dynamic> json) => RecycledMaterial(
+        name: json['name'] as String? ?? '',
+        quantityKg: (json['kg'] ?? json['quantity'] ?? 0).toDouble(),
+        ek: (json['ek'] as num?)?.toDouble(),
+      );
 }
 
 class Sale {
@@ -71,11 +61,29 @@ class Sale {
     final materialsList = json['materials'] as List<dynamic>? ?? [];
     return Sale(
       id: json['id'] ?? 0,
-      date: DateTime.parse(json['date']),
+      date: DateTime.parse(json['date'] as String),
       materials: materialsList
           .map((e) => SaleItem.fromJson(e as Map<String, dynamic>))
           .toList(),
       totalEk: (json['total_ek'] ?? 0).toDouble(),
     );
   }
+}
+
+class SaleItem {
+  final String name;
+  final double quantityKg;
+  final double ekReceived;
+
+  SaleItem({
+    required this.name,
+    required this.quantityKg,
+    required this.ekReceived,
+  });
+
+  factory SaleItem.fromJson(Map<String, dynamic> json) => SaleItem(
+        name: json['name'] as String? ?? '',
+        quantityKg: (json['quantity'] ?? json['kg'] ?? 0).toDouble(),
+        ekReceived: (json['ek_received'] ?? json['ek'] ?? 0).toDouble(),
+      );
 }

@@ -1,5 +1,12 @@
-import 'package:ecokondo/ecokondo.dart';
 import 'package:flutter/material.dart';
+
+import '../models/city.dart';
+import '../models/finance.dart';
+import '../models/user_profile.dart';
+import '../repositories/cities.dart';
+import '../repositories/finance.dart';
+import '../repositories/users.dart';
+import '../utils/auth_utils.dart';
 
 class FinanceTab extends StatefulWidget {
   const FinanceTab({super.key});
@@ -10,93 +17,119 @@ class FinanceTab extends StatefulWidget {
 
 class _FinanceTabState extends State<FinanceTab> {
   final FinanceRepository repo = FinanceRepository();
-  FinanceData? finance;
+  final UsersRepository usersRepo = UsersRepository();
+  final CitiesRepository citiesRepo = CitiesRepository();
+
+  int? _userId;
+  UserProfile? _profile;
+  List<City> _cities = [];
+  FinanceData? _finance;
+  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadFinanceData();
+    _bootstrap();
   }
 
-  Future<void> _loadFinanceData() async {
+  Future<void> _bootstrap() async {
+    final id = await getCurrentUserId();
+    if (id == null) return;
+    _userId = id;
     try {
-      final data = await repo.getFinanceData();
-
+      final prof = await usersRepo.getProfile(id);
+      final cities = await citiesRepo.list();
+      final fin = await repo.getFinanceData(id);
       setState(() {
-        finance = data;
+        _profile = prof;
+        _cities = cities;
+        _finance = fin;
+        _loading = false;
       });
-    } catch (e) {
-      debugPrint('Erro ao carregar financeiro: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Error')));
+    } catch (_) {
+      setState(() => _loading = false);
     }
+  }
+
+  Future<void> _reloadFinance() async {
+    if (_userId == null) return;
+    final fin = await repo.getFinanceData(_userId!);
+    setState(() => _finance = fin);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (finance == null) {
-      return const Center(child: CircularProgressIndicator());
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_finance == null) {
+      return const Center(child: Text('Erro ao carregar finanças'));
     }
-
-    final reais = finance!.balance * finance!.ekToReal;
+    final reais = _finance!.balance * _finance!.ekToReal;
 
     return RefreshIndicator(
-      onRefresh: _loadFinanceData,
+      onRefresh: _reloadFinance,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Meu Saldo',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            elevation: 3,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+          if (_profile != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
                 children: [
-                  Text(
-                    '${finance!.balance.toStringAsFixed(2)} EcoKondos',
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                  const Text('Cidade de venda:'),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: DropdownButton<int>(
+                      isExpanded: true,
+                      value: _profile!.preferredCityId == 0
+                          ? null
+                          : _profile!.preferredCityId,
+                      hint: const Text('Selecione'),
+                      items: _cities
+                          .map(
+                            (c) => DropdownMenuItem<int>(
+                              value: c.id,
+                              child: Text("${c.name} - ${c.state}"),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) async {
+                        if (val == null || _userId == null) return;
+                        final newId = await usersRepo.setPreferredCity(
+                          _userId!,
+                          val,
+                        );
+                        setState(() {
+                          _profile = UserProfile(
+                            userId: _profile!.userId,
+                            fullName: _profile!.fullName,
+                            userType: _profile!.userType,
+                            address: _profile!.address,
+                            preferredCityId: newId,
+                          );
+                        });
+                        await _reloadFinance();
+                      },
                     ),
-                  ),
-                  Text(
-                    '≈ R\$ ${reais.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 18, color: Colors.grey),
                   ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Conversão Atual',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '1 EcoKondo = R\$ ${finance!.ekToReal.toStringAsFixed(2)}',
-            style: const TextStyle(fontSize: 18),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Tabela de Materiais',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          Card(
+            child: ListTile(
+              title: Text('Saldo: ${_finance!.balance.toStringAsFixed(2)} EK'),
+              subtitle: Text('≈ R\$ ${reais.toStringAsFixed(2)}'),
+            ),
           ),
           const SizedBox(height: 8),
-          ...finance!.materials.entries.map(
+          const Text(
+            'Materiais (EK por kg)',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ..._finance!.materials.entries.map(
             (e) => ListTile(
-              leading: const Icon(Icons.recycling, color: Colors.green),
-              title: Text(e.key.replaceAll('_', ' ').toUpperCase()),
-              trailing: Text('${e.value} EK / kg'),
+              title: Text(e.key),
+              trailing: Text(e.value.toStringAsFixed(2)),
             ),
           ),
         ],
