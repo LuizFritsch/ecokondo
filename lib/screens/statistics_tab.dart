@@ -1,8 +1,5 @@
-
+import 'package:ecokondo/ecokondo.dart';
 import 'package:flutter/material.dart';
-import '../models/statistics.dart';
-import '../repositories/statistics.dart';
-import '../utils/auth_utils.dart';
 
 class StatisticsTab extends StatefulWidget {
   const StatisticsTab({super.key});
@@ -20,27 +17,42 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   String _displayName(String key) {
     switch (key) {
-      case 'plastico_mole': return 'Plástico mole';
-      case 'papel_papelao': return 'Papel/Papelão';
-      case 'oleo_cozinha':  return 'Óleo de cozinha';
-      case 'caixa_leite':   return 'Caixa de leite';
+      case 'plastico_mole':
+        return 'Plástico mole';
+      case 'papel_papelao':
+        return 'Papel/Papelão';
+      case 'oleo_cozinha':
+        return 'Óleo de cozinha';
+      case 'caixa_leite':
+        return 'Caixa de leite';
       default:
         final pretty = key.replaceAll('_', ' ');
-        return pretty.isEmpty ? key : pretty[0].toUpperCase() + pretty.substring(1);
+        return pretty.isEmpty
+            ? key
+            : pretty[0].toUpperCase() + pretty.substring(1);
     }
   }
 
   IconData _iconFor(String key) {
     switch (key) {
-      case 'pet': return Icons.local_drink;
-      case 'aluminio': return Icons.local_cafe;
-      case 'vidro': return Icons.wine_bar;
-      case 'papel_papelao': return Icons.description;
-      case 'plastico_mole': return Icons.shopping_bag;
-      case 'oleo_cozinha': return Icons.oil_barrel;
-      case 'ferro': return Icons.build;
-      case 'caixa_leite': return Icons.local_mall;
-      default: return Icons.category;
+      case 'pet':
+        return Icons.local_drink;
+      case 'aluminio':
+        return Icons.local_cafe;
+      case 'vidro':
+        return Icons.wine_bar;
+      case 'papel_papelao':
+        return Icons.description;
+      case 'plastico_mole':
+        return Icons.shopping_bag;
+      case 'oleo_cozinha':
+        return Icons.oil_barrel;
+      case 'ferro':
+        return Icons.build;
+      case 'caixa_leite':
+        return Icons.local_mall;
+      default:
+        return Icons.category;
     }
   }
 
@@ -69,20 +81,99 @@ class _StatisticsTabState extends State<StatisticsTab> {
     }
   }
 
+  Widget _buildRankCard({
+    required String label,
+    required int rank,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Card(
+        color: color.withOpacity(0.08),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 30),
+              const SizedBox(height: 8),
+              Text(
+                "#$rank",
+                style: TextStyle(
+                  color: color,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_stats == null) return const Center(child: Text('Erro ao carregar estatísticas.'));
+    if (_stats == null)
+      return const Center(child: Text('Erro ao carregar estatísticas.'));
 
     final recycledMaterials = [..._stats!.materialsRecycled]
       ..sort((a, b) => b.quantityKg.compareTo(a.quantityKg));
+
+    // Valores de rank (mock enquanto backend não envia)
+    final globalRank = _stats!.globalRank ?? 1;
+    final cityRank = _stats!.cityRank ?? 1;
+    final districtRank = _stats!.districtRank ?? 1;
 
     return RefreshIndicator(
       onRefresh: _bootstrap,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Materiais reciclados', style: TextStyle(fontWeight: FontWeight.bold)),
+          // --- NOVA SEÇÃO DE RANKING ---
+          Text('Ranking', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildRankCard(
+                label: 'Global',
+                rank: globalRank,
+                icon: Icons.public,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              _buildRankCard(
+                label: 'Cidade',
+                rank: cityRank,
+                icon: Icons.location_city,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              const SizedBox(width: 8),
+              _buildRankCard(
+                label: 'Bairro',
+                rank: districtRank,
+                icon: Icons.home_work,
+                color: Colors.teal,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // --- LISTA DE MATERIAIS RECICLADOS ---
+          Text(
+            'Materiais reciclados',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           ...recycledMaterials.map(
             (m) => ListTile(

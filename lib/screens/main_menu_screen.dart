@@ -35,19 +35,26 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
 
   Future<void> _bootstrapHeader() async {
     try {
-      final id = await getCurrentUserId();
-      _userId = id;
-      if (id != null) {
-        final profile = await usersRepo.getProfile(id);
-        final finance = await financeRepo.getFinanceData(id);
-        setState(() {
-          _profile = profile;
-          _finance = finance;
-          _loadingHeader = false;
-        });
-      } else {
-        setState(() => _loadingHeader = false);
+      final userId = await getCurrentUserId();
+
+      if (userId == null) {
+        // ✅ se não estiver logado, vai pra tela de login
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+        }
+        return;
       }
+
+      _userId = userId;
+
+      final profile = await usersRepo.getProfile(userId);
+      final finance = await financeRepo.getFinanceData(userId);
+
+      setState(() {
+        _profile = profile;
+        _finance = finance;
+        _loadingHeader = false;
+      });
     } catch (_) {
       setState(() => _loadingHeader = false);
     }

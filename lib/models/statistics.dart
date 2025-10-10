@@ -1,89 +1,133 @@
+class MaterialStat {
+  final String name;
+  final double kg;
+  final double ek;
 
-class UserStatistics {
-  final List<RecycledMaterial> materialsRecycled;
-  final List<Sale> salesHistory;
+  // Getter para manter compatibilidade com o front
+  double get quantityKg => kg;
 
-  UserStatistics({
-    required this.materialsRecycled,
-    required this.salesHistory,
-  });
+  MaterialStat({required this.name, required this.kg, required this.ek});
 
-  factory UserStatistics.fromJson(Map<String, dynamic> json) {
-    // Backend: { user: {...}, recycled: { total_kg, total_ek, by_material: [...] }, sales_history: [...] }
-    final recycledObj = (json['recycled'] as Map<String, dynamic>?) ?? {};
-    final byMaterial = (recycledObj['by_material'] as List<dynamic>? ?? [])
-        .map((e) => RecycledMaterial.fromJson(e as Map<String, dynamic>))
-        .toList();
-
-    final salesList = (json['sales_history'] as List<dynamic>? ?? [])
-        .map((e) => Sale.fromJson(e as Map<String, dynamic>))
-        .toList();
-
-    return UserStatistics(
-      materialsRecycled: byMaterial,
-      salesHistory: salesList,
+  factory MaterialStat.fromJson(Map<String, dynamic> json) {
+    return MaterialStat(
+      name: json['name'] ?? 'Desconhecido',
+      kg: (json['kg'] as num?)?.toDouble() ?? 0.0,
+      ek: (json['ek'] as num?)?.toDouble() ?? 0.0,
     );
   }
+
+  Map<String, dynamic> toJson() => {'name': name, 'kg': kg, 'ek': ek};
 }
 
-class RecycledMaterial {
+class SaleMaterialItem {
   final String name;
-  final double quantityKg;
-  final double? ek;
+  final double quantity;
+  final double ekReceived;
 
-  RecycledMaterial({
+  // Getter compatível com telas antigas
+  double get quantityKg => quantity;
+
+  SaleMaterialItem({
     required this.name,
-    required this.quantityKg,
-    this.ek,
+    required this.quantity,
+    required this.ekReceived,
   });
 
-  factory RecycledMaterial.fromJson(Map<String, dynamic> json) => RecycledMaterial(
-        name: json['name'] as String? ?? '',
-        quantityKg: (json['kg'] ?? json['quantity'] ?? 0).toDouble(),
-        ek: (json['ek'] as num?)?.toDouble(),
-      );
+  factory SaleMaterialItem.fromJson(Map<String, dynamic> json) {
+    return SaleMaterialItem(
+      name: json['name'] ?? 'Desconhecido',
+      quantity: (json['quantity'] as num?)?.toDouble() ?? 0.0,
+      ekReceived: (json['ek_received'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'quantity': quantity,
+    'ek_received': ekReceived,
+  };
 }
 
-class Sale {
+class SalesHistory {
   final int id;
   final DateTime date;
-  final List<SaleItem> materials;
+  final String cityName;
+  final String state;
+  final List<SaleMaterialItem> materials;
   final double totalEk;
 
-  Sale({
+  SalesHistory({
     required this.id,
     required this.date,
+    required this.cityName,
+    required this.state,
     required this.materials,
     required this.totalEk,
   });
 
-  factory Sale.fromJson(Map<String, dynamic> json) {
-    final materialsList = json['materials'] as List<dynamic>? ?? [];
-    return Sale(
+  factory SalesHistory.fromJson(Map<String, dynamic> json) {
+    final city = json['city'] ?? {};
+    return SalesHistory(
       id: json['id'] ?? 0,
-      date: DateTime.parse(json['date'] as String),
-      materials: materialsList
-          .map((e) => SaleItem.fromJson(e as Map<String, dynamic>))
+      date: DateTime.tryParse(json['date'] ?? '') ?? DateTime.now(),
+      cityName: city['name'] ?? '',
+      state: city['state'] ?? '',
+      materials: (json['materials'] as List<dynamic>? ?? [])
+          .map((e) => SaleMaterialItem.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
-      totalEk: (json['total_ek'] ?? 0).toDouble(),
+      totalEk: (json['total_ek'] as num?)?.toDouble() ?? 0.0,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'date': date.toIso8601String(),
+    'city': {'name': cityName, 'state': state},
+    'materials': materials.map((e) => e.toJson()).toList(),
+    'total_ek': totalEk,
+  };
 }
 
-class SaleItem {
-  final String name;
-  final double quantityKg;
-  final double ekReceived;
+class UserStatistics {
+  final List<MaterialStat> materialsRecycled;
+  final List<SalesHistory> salesHistory;
 
-  SaleItem({
-    required this.name,
-    required this.quantityKg,
-    required this.ekReceived,
+  // Campos opcionais de ranking
+  final int? globalRank;
+  final int? cityRank;
+  final int? districtRank;
+
+  UserStatistics({
+    required this.materialsRecycled,
+    required this.salesHistory,
+    this.globalRank,
+    this.cityRank,
+    this.districtRank,
   });
 
-  factory SaleItem.fromJson(Map<String, dynamic> json) => SaleItem(
-        name: json['name'] as String? ?? '',
-        quantityKg: (json['quantity'] ?? json['kg'] ?? 0).toDouble(),
-        ekReceived: (json['ek_received'] ?? json['ek'] ?? 0).toDouble(),
-      );
+  factory UserStatistics.fromJson(Map<String, dynamic> json) {
+    final recycled = json['recycled'] ?? {};
+    final byMaterial = recycled['by_material'] as List<dynamic>? ?? [];
+    final sales = json['sales_history'] as List<dynamic>? ?? [];
+
+    return UserStatistics(
+      materialsRecycled: byMaterial
+          .map((e) => MaterialStat.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      salesHistory: sales
+          .map((e) => SalesHistory.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      globalRank: json['globalRank'] is int ? json['globalRank'] : null,
+      cityRank: json['cityRank'] is int ? json['cityRank'] : null,
+      districtRank: json['districtRank'] is int ? json['districtRank'] : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'materialsRecycled': materialsRecycled.map((e) => e.toJson()).toList(),
+    'salesHistory': salesHistory.map((e) => e.toJson()).toList(),
+    if (globalRank != null) 'globalRank': globalRank,
+    if (cityRank != null) 'cityRank': cityRank,
+    if (districtRank != null) 'districtRank': districtRank,
+  };
 }
