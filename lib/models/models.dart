@@ -3,6 +3,7 @@ export 'city.dart';
 export 'exchange_point.dart';
 export 'finance.dart';
 export 'material_rule.dart';
+export 'purchase.dart';
 export 'statistics.dart';
 export 'user_logged_in.dart';
 export 'user_profile.dart';

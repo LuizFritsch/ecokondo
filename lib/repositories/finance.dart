@@ -1,8 +1,7 @@
-
 import 'dart:convert';
+
+import 'package:ecokondo/ecokondo.dart';
 import 'package:http/http.dart' as http;
-import '../constants.dart';
-import '../models/finance.dart';
 
 class FinanceRepository {
   final http.Client _client;
@@ -18,5 +17,22 @@ class FinanceRepository {
       return FinanceData.fromJson(data);
     }
     throw Exception("Failed to load finance (${resp.statusCode})");
+  }
+
+  Future<List<Purchase>> getPurchases(int userId) async {
+    final uri = Uri.parse(
+      '${AppConstants.apiBaseUrl}/finance/purchases/$userId',
+    );
+    final res = await _client.get(uri);
+
+    if (res.statusCode == 200) {
+      final jsonData = jsonDecode(res.body);
+      final purchases = (jsonData['purchases'] as List<dynamic>? ?? [])
+          .map((e) => Purchase.fromJson(e))
+          .toList();
+      return purchases;
+    } else {
+      throw Exception('Erro ao carregar histórico de compras');
+    }
   }
 }
