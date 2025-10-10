@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
 import '../models/statistics.dart';
 import '../repositories/statistics.dart';
 import '../utils/auth_utils.dart';
@@ -20,42 +20,27 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   String _displayName(String key) {
     switch (key) {
-      case 'plastico_mole':
-        return 'Plástico mole';
-      case 'papel_papelao':
-        return 'Papel/Papelão';
-      case 'oleo_cozinha':
-        return 'Óleo de cozinha';
-      case 'caixa_leite':
-        return 'Caixa de leite';
+      case 'plastico_mole': return 'Plástico mole';
+      case 'papel_papelao': return 'Papel/Papelão';
+      case 'oleo_cozinha':  return 'Óleo de cozinha';
+      case 'caixa_leite':   return 'Caixa de leite';
       default:
         final pretty = key.replaceAll('_', ' ');
-        return pretty.isEmpty
-            ? key
-            : pretty[0].toUpperCase() + pretty.substring(1);
+        return pretty.isEmpty ? key : pretty[0].toUpperCase() + pretty.substring(1);
     }
   }
 
   IconData _iconFor(String key) {
     switch (key) {
-      case 'pet':
-        return Icons.local_drink;
-      case 'aluminio':
-        return Icons.local_cafe;
-      case 'vidro':
-        return Icons.wine_bar;
-      case 'papel_papelao':
-        return Icons.description;
-      case 'plastico_mole':
-        return Icons.shopping_bag;
-      case 'oleo_cozinha':
-        return Icons.oil_barrel;
-      case 'ferro':
-        return Icons.build;
-      case 'caixa_leite':
-        return Icons.local_mall;
-      default:
-        return Icons.category;
+      case 'pet': return Icons.local_drink;
+      case 'aluminio': return Icons.local_cafe;
+      case 'vidro': return Icons.wine_bar;
+      case 'papel_papelao': return Icons.description;
+      case 'plastico_mole': return Icons.shopping_bag;
+      case 'oleo_cozinha': return Icons.oil_barrel;
+      case 'ferro': return Icons.build;
+      case 'caixa_leite': return Icons.local_mall;
+      default: return Icons.category;
     }
   }
 
@@ -84,44 +69,29 @@ class _StatisticsTabState extends State<StatisticsTab> {
     }
   }
 
-  Future<void> _reload() async {
-    if (_userId == null) return;
-
-    final s = await repo.getStatistics(_userId!);
-    setState(() => _stats = s);
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
-    if (_stats == null)
-      return const Center(child: Text('Erro ao carregar estatísticas.'));
+    if (_stats == null) return const Center(child: Text('Erro ao carregar estatísticas.'));
 
     final recycledMaterials = [..._stats!.materialsRecycled]
       ..sort((a, b) => b.quantityKg.compareTo(a.quantityKg));
 
     return RefreshIndicator(
-      onRefresh: _reload,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+      onRefresh: _bootstrap,
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Materiais reciclados',
-              style: TextStyle(fontWeight: FontWeight.bold),
+        children: [
+          const Text('Materiais reciclados', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...recycledMaterials.map(
+            (m) => ListTile(
+              leading: Icon(_iconFor(m.name)),
+              title: Text(_displayName(m.name)),
+              trailing: Text('${m.quantityKg.toStringAsFixed(1)} kg'),
             ),
-            const SizedBox(height: 8),
-            ...recycledMaterials.map(
-              (m) => ListTile(
-                leading: Icon(_iconFor(m.name)),
-                title: Text(_displayName(m.name)),
-                trailing: Text('${m.quantityKg.toStringAsFixed(1)} kg'),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

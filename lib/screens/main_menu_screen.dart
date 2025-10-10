@@ -4,7 +4,6 @@ import '../models/finance.dart';
 import '../models/user_profile.dart';
 import '../repositories/finance.dart';
 import '../repositories/users.dart';
-import '../theme/app_theme.dart';
 import '../utils/auth_utils.dart';
 import 'finance_tab.dart';
 import 'home_tab.dart';
@@ -37,75 +36,72 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   Future<void> _bootstrapHeader() async {
     try {
       final id = await getCurrentUserId();
-      if (id == null) {
-        setState(() => _loadingHeader = false);
-        return;
-      }
       _userId = id;
-      final profile = await usersRepo.getProfile(id);
-      final finance = await financeRepo.getFinanceData(id);
-      setState(() {
-        _profile = profile;
-        _finance = finance;
-        _loadingHeader = false;
-      });
+      if (id != null) {
+        final profile = await usersRepo.getProfile(id);
+        final finance = await financeRepo.getFinanceData(id);
+        setState(() {
+          _profile = profile;
+          _finance = finance;
+          _loadingHeader = false;
+        });
+      } else {
+        setState(() => _loadingHeader = false);
+      }
     } catch (_) {
       setState(() => _loadingHeader = false);
     }
   }
 
-  Widget _buildAppBarContent() {
-    final name = _profile?.fullName ?? 'Usuário';
+  Widget _saldoPill(BuildContext context) {
     final balanceEK = _finance?.balance ?? 0.0;
     final reais = _finance == null ? 0.0 : (balanceEK * _finance!.ekToReal);
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          name,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.2)),
-          ),
-          child: _loadingHeader
-              ? const SizedBox(
-                  width: 80,
-                  height: 12,
-                  child: LinearProgressIndicator(color: AppColors.white),
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet,
-                      size: 18,
-                      color: AppColors.white,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${balanceEK.toStringAsFixed(2)} EK',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '•  ≈ R\$ ${reais.toStringAsFixed(2)}',
-                      style: const TextStyle(color: AppColors.white),
-                    ),
-                  ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: _loadingHeader
+          ? const SizedBox(
+              width: 80,
+              height: 10,
+              child: LinearProgressIndicator(),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.account_balance_wallet,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
-        ),
-      ],
+                const SizedBox(width: 8),
+                Text(
+                  '${balanceEK.toStringAsFixed(2)} EcoKondo(s)',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                // const SizedBox(width: 8),
+                // Text('•  ≈ R\$ ${reais.toStringAsFixed(2)}'),
+              ],
+            ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final name = _profile?.fullName ?? 'Usuário';
+    return AppBar(
+      actions: [_saldoPill(context)],
+      // titleSpacing: 8,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(name, style: Theme.of(context).textTheme.titleMedium),
+          // const SizedBox(height: 8),
+          // _saldoPill(context),
+        ],
+      ),
     );
   }
 
@@ -127,11 +123,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 96,
-        titleSpacing: 16,
-        title: _buildAppBarContent(),
-      ),
+      appBar: _buildAppBar(context),
       body: _buildBody(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,

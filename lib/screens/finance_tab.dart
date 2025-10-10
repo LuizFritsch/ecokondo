@@ -102,6 +102,10 @@ class _FinanceTabState extends State<FinanceTab> {
         children: [
           Card(
             child: ListTile(
+              leading: Icon(
+                Icons.account_balance_wallet,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               title: Text(
                 'Saldo: ${_finance!.balance.toStringAsFixed(2)} EcoKondo(s)',
               ),
