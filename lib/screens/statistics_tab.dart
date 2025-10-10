@@ -86,6 +86,7 @@ class _StatisticsTabState extends State<StatisticsTab> {
 
   Future<void> _reload() async {
     if (_userId == null) return;
+
     final s = await repo.getStatistics(_userId!);
     setState(() => _stats = s);
   }

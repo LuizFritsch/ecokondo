@@ -40,10 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
         // );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) =>
-                const MainMenuScreen(userType: UserType.usuario),
-          ),
+          MaterialPageRoute(builder: (context) => const MainMenuScreen()),
         );
         // Navigator.pushReplacement(
         //   context,

@@ -1,5 +1,7 @@
-import 'package:ecokondo/ecokondo.dart';
+
 import 'package:flutter/material.dart';
+import 'theme/app_theme.dart';
+import 'screens/main_menu_screen.dart';
 
 void main() {
   runApp(const EcoKondoApp());
@@ -11,49 +13,12 @@ class EcoKondoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: AppStrings.appName,
+      title: 'Eco Kondo',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: AppColors.primary,
-        scaffoldBackgroundColor: AppColors.background,
-      ),
-      home: const RootScreen(),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
+      home: const MainMenuScreen(),
     );
-  }
-}
-
-class RootScreen extends StatefulWidget {
-  const RootScreen({super.key});
-
-  @override
-  State<RootScreen> createState() => _RootScreenState();
-}
-
-class _RootScreenState extends State<RootScreen> {
-  final AuthRepository _authRepository = AuthRepository();
-  bool _loading = true;
-  Widget _screen = const LoginScreen();
-
-  @override
-  void initState() {
-    super.initState();
-    _checkLogin();
-  }
-
-  void _checkLogin() async {
-    final loggedIn = await _authRepository.isLoggedIn();
-    setState(() {
-      _screen = loggedIn
-          ? const MainMenuScreen(userType: UserType.prefeitura)
-          : const LoginScreen();
-      _loading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _loading
-        ? const Scaffold(body: Center(child: CircularProgressIndicator()))
-        : _screen;
   }
 }
