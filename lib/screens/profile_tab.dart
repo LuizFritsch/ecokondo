@@ -1,5 +1,6 @@
 import 'package:ecokondo/ecokondo.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({super.key});
@@ -76,37 +77,64 @@ class _ProfileTabState extends State<ProfileTab> {
     }
   }
 
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
+
   Future<void> _confirmLogout() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Sair da conta?'),
-        content: const Text(
-          'Você tem certeza que deseja finalizar sua sessão?',
+    if (!mounted) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Sair da conta?'),
+          content: const Text(
+            'Você tem certeza que deseja encerrar sua sessão?',
+          ),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.logout),
+              label: const Text('Sair'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Sair', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-    if (ok == true) {
-      await logout();
-      if (!mounted) return;
-      try {
+      );
+
+      if (ok == true) {
+        await logout();
+        if (!mounted) return;
+
+        // ✅ volta para a tela de login
         Navigator.of(
           context,
         ).pushNamedAndRemoveUntil('/login', (route) => false);
-      } catch (_) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Logout realizado com sucesso'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
-    }
+    });
   }
 
   @override

@@ -1,7 +1,8 @@
-
 import 'package:flutter/material.dart';
-import 'theme/app_theme.dart';
+
+import 'login.dart';
 import 'screens/main_menu_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const EcoKondoApp());
@@ -19,6 +20,10 @@ class EcoKondoApp extends StatelessWidget {
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
       home: const MainMenuScreen(),
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/main': (context) => const MainMenuScreen(),
+      },
     );
   }
 }
