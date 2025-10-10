@@ -1,5 +1,6 @@
 import 'package:ecokondo/ecokondo.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class FinanceTab extends StatefulWidget {
   const FinanceTab({super.key});
@@ -9,96 +10,144 @@ class FinanceTab extends StatefulWidget {
 }
 
 class _FinanceTabState extends State<FinanceTab> {
-  final FinanceRepository repo = FinanceRepository();
-  FinanceData? finance;
+  final FinanceRepository financeRepo = FinanceRepository();
+  final StatisticsRepository statsRepo = StatisticsRepository();
+
+  int? _userId;
+  FinanceData? _finance;
+  UserStatistics? _stats;
+  bool _loading = true;
+
+  String _displayName(String key) {
+    switch (key) {
+      case 'plastico_mole':
+        return 'Plástico mole';
+      case 'papel_papelao':
+        return 'Papel/Papelão';
+      case 'oleo_cozinha':
+        return 'Óleo de cozinha';
+      case 'caixa_leite':
+        return 'Caixa de leite';
+      default:
+        final pretty = key.replaceAll('_', ' ');
+        return pretty.isEmpty
+            ? key
+            : pretty[0].toUpperCase() + pretty.substring(1);
+    }
+  }
+
+  IconData _iconFor(String key) {
+    switch (key) {
+      case 'pet':
+        return Icons.local_drink;
+      case 'aluminio':
+        return Icons.local_cafe;
+      case 'vidro':
+        return Icons.wine_bar;
+      case 'papel_papelao':
+        return Icons.description;
+      case 'plastico_mole':
+        return Icons.shopping_bag;
+      case 'oleo_cozinha':
+        return Icons.oil_barrel;
+      case 'ferro':
+        return Icons.build;
+      case 'caixa_leite':
+        return Icons.local_mall;
+      default:
+        return Icons.category;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadFinanceData();
+    _bootstrap();
   }
 
-  Future<void> _loadFinanceData() async {
+  Future<void> _bootstrap() async {
     try {
-      final data = await repo.getFinanceData();
+      final id = await getCurrentUserId();
+      if (id == null) {
+        setState(() => _loading = false);
+        return;
+      }
+      _userId = id;
+
+      final finance = await financeRepo.getFinanceData(id);
+      final stats = await statsRepo.getStatistics(id);
 
       setState(() {
-        finance = data;
+        _finance = finance;
+        _stats = stats;
+        _loading = false;
       });
-    } catch (e) {
-      debugPrint('Erro ao carregar financeiro: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Error')));
+    } catch (_) {
+      setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (finance == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_finance == null)
+      return const Center(child: Text('Erro ao carregar finanças.'));
 
-    final reais = finance!.balance * finance!.ekToReal;
+    final reais = _finance!.balance * _finance!.ekToReal;
 
     return RefreshIndicator(
-      onRefresh: _loadFinanceData,
+      onRefresh: _bootstrap,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Meu Saldo',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          Card(
+            child: ListTile(
+              title: Text(
+                'Saldo: ${_finance!.balance.toStringAsFixed(2)} EcoKondo(s)',
+              ),
+              subtitle: Text('≈ R\$ ${reais.toStringAsFixed(2)}'),
+            ),
           ),
           const SizedBox(height: 8),
-          Card(
-            elevation: 3,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          const Text(
+            'Quanto vale meu lixo? (EK por kg)',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          ..._finance!.materials.entries.map(
+            (e) => ListTile(
+              leading: Icon(_iconFor(e.key)),
+              title: Text(_displayName(e.key)),
+              trailing: Text('${e.value.toStringAsFixed(2)} EK'),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(
-                    '${finance!.balance.toStringAsFixed(2)} EcoKondos',
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
+          ),
+          if (_stats?.salesHistory != null &&
+              _stats!.salesHistory.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Histórico de vendas',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            ..._stats!.salesHistory.map(
+              (s) => Card(
+                child: ListTile(
+                  title: Text(DateFormat('dd/MM/yyyy HH:mm').format(s.date)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: s.materials
+                        .map(
+                          (i) => Text(
+                            '${_displayName(i.name)}: ${i.quantityKg} kg → ${i.ekReceived} EK',
+                          ),
+                        )
+                        .toList(),
                   ),
-                  Text(
-                    '≈ R\$ ${reais.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                ],
+                  trailing: Text('${s.totalEk} EK'),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Conversão Atual',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '1 EcoKondo = R\$ ${finance!.ekToReal.toStringAsFixed(2)}',
-            style: const TextStyle(fontSize: 18),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Tabela de Materiais',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ...finance!.materials.entries.map(
-            (e) => ListTile(
-              leading: const Icon(Icons.recycling, color: Colors.green),
-              title: Text(e.key.replaceAll('_', ' ').toUpperCase()),
-              trailing: Text('${e.value} EK / kg'),
-            ),
-          ),
+          ],
         ],
       ),
     );

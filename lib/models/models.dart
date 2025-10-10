@@ -1,4 +1,9 @@
+export 'address.dart';
+export 'city.dart';
+export 'exchange_point.dart';
 export 'finance.dart';
+export 'material_rule.dart';
 export 'statistics.dart';
 export 'user_logged_in.dart';
+export 'user_profile.dart';
 export 'user_types.dart';
