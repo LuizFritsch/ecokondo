@@ -30,6 +30,7 @@ class AppColors {
   static const Color primary = Color(0xFF2E8B57);
   static const Color accent = Color(0xFFD9822B);
   static const Color background = Colors.white;
+  static const success = Color(0xFF28A745);
 }
 
 class AppTextStyles {
